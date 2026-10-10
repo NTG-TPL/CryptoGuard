@@ -58,6 +58,9 @@ USER $USERNAME
 
 RUN git config --global core.editor code
 
+# Create conan home so the mounted volume is owned by the user, not root
+RUN mkdir -p /home/$USERNAME/.conan2
+
 # Install conan through pipx
 RUN pipx install conan
 RUN pipx ensurepath
