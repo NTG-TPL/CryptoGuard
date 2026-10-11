@@ -1,37 +1,36 @@
 #pragma once
 
 #include <boost/program_options.hpp>
+#include <iostream>
 #include <string>
-#include <unordered_map>
 
 namespace CryptoGuard {
 
 class ProgramOptions {
 public:
-    ProgramOptions();
-    ~ProgramOptions();
-
     enum class COMMAND_TYPE {
+        NONE,
         ENCRYPT,
         DECRYPT,
         CHECKSUM,
     };
 
-    void Parse(int argc, char *argv[]);
-
-    COMMAND_TYPE GetCommand() const { return command_; }
-    std::string GetInputFile() const { return inputFile_; }
-    std::string GetOutputFile() const { return outputFile_; }
-    std::string GetPassword() const { return password_; }
-
-private:
-    COMMAND_TYPE command_;
-    const std::unordered_map<std::string_view, COMMAND_TYPE> commandMapping_ = {
-        {"encrypt", ProgramOptions::COMMAND_TYPE::ENCRYPT},
-        {"decrypt", ProgramOptions::COMMAND_TYPE::DECRYPT},
-        {"checksum", ProgramOptions::COMMAND_TYPE::CHECKSUM},
+    enum class PARSE_RESULT {
+        OK,
+        HELP_SHOWN,
     };
 
+    ProgramOptions();
+
+    PARSE_RESULT Parse(int argc, char *argv[], std::ostream &helpOut = std::cout);
+
+    COMMAND_TYPE GetCommand() const noexcept { return command_; }
+    const std::string &GetInputFile() const noexcept { return inputFile_; }
+    const std::string &GetOutputFile() const noexcept { return outputFile_; }
+    const std::string &GetPassword() const noexcept { return password_; }
+
+private:
+    COMMAND_TYPE command_ = COMMAND_TYPE::NONE;
     std::string inputFile_;
     std::string outputFile_;
     std::string password_;
