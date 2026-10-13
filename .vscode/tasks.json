@@ -32,6 +32,15 @@
             "group": {
                 "kind": "build"
             }
+        },
+        {
+            "label": "Lint: clang-format + clang-tidy",
+            "type": "shell",
+            "command": "clang-format --dry-run --Werror ${workspaceFolder}/include/*.h ${workspaceFolder}/src/*.h ${workspaceFolder}/src/*.cpp ${workspaceFolder}/tests/*.cpp && clang-tidy-20 -p ${workspaceFolder}/build --quiet --header-filter='^${workspaceFolder}/(include|src|tests)/' ${workspaceFolder}/src/*.cpp ${workspaceFolder}/tests/*.cpp",
+            "presentation": {
+                "clear": true
+            },
+            "problemMatcher": "$gcc"
         }
     ]
 }

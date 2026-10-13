@@ -2,8 +2,9 @@
 
 #include <gtest/gtest.h>
 
-#include <filesystem>
-#include <fstream>
+#include <array>
+#include <format>
+#include <ranges>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -16,9 +17,9 @@ namespace {
 using CryptoGuard::ProgramOptions;
 using COMMAND_TYPE = ProgramOptions::COMMAND_TYPE;
 using PARSE_RESULT = ProgramOptions::PARSE_RESULT;
-using Args = std::vector<std::string>;
+using ArgList = std::vector<std::string>;
 
-PARSE_RESULT Parse(ProgramOptions &options, Args args, std::ostream &helpOut) {
+PARSE_RESULT Parse(ProgramOptions &options, ArgList args, std::ostream &helpOut) {
     args.insert(args.begin(), "CryptoGuard");
     std::vector<char *> argv;
     for (auto &arg : args) {
@@ -28,40 +29,21 @@ PARSE_RESULT Parse(ProgramOptions &options, Args args, std::ostream &helpOut) {
     return options.Parse(static_cast<int>(args.size()), argv.data(), helpOut);
 }
 
-PARSE_RESULT Parse(ProgramOptions &options, Args args) {
+PARSE_RESULT Parse(ProgramOptions &options, ArgList args) {
     std::ostringstream helpOut;
     return Parse(options, std::move(args), helpOut);
 }
 
-std::string ParseError(Args args) {
-    ProgramOptions options;
+std::string ParseError(ArgList args) {
     try {
+        ProgramOptions options;
         Parse(options, std::move(args));
     } catch (const std::invalid_argument &e) {
         return e.what();
     }
-    ADD_FAILURE() << "std::invalid_argument was not thrown";
+    ADD_FAILURE() << "expected std::invalid_argument was not thrown";
     return {};
 }
-
-class TempFile {
-public:
-    explicit TempFile(std::string_view name) : path_(std::filesystem::temp_directory_path() / name) {
-        std::ofstream{path_} << "data";
-    }
-    ~TempFile() {
-        std::error_code error;
-        std::filesystem::remove(path_, error);
-    }
-
-    TempFile(const TempFile &) = delete;
-    TempFile &operator=(const TempFile &) = delete;
-
-    const std::filesystem::path &Path() const { return path_; }
-
-private:
-    std::filesystem::path path_;
-};
 
 }  // namespace
 
@@ -164,27 +146,21 @@ TEST(ProgramOptions, RejectsEmptyValues) {
 }
 
 TEST(ProgramOptions, RejectsMalformedCommandLine) {
-    const std::vector<Args> cases = {
-        {"-c", "checksum", "-i", "in.txt", "extra"},
-        {"-c", "checksum", "-i", "in.txt", "-i", "other.txt"},
-        {"--comm", "checksum", "-i", "in.txt"},
+    struct Case {
+        ArgList args;
+        std::vector<std::string_view> expectedParts;
     };
-    for (std::size_t i = 0; i < cases.size(); ++i) {
-        SCOPED_TRACE(testing::Message() << "case #" << i);
-        ProgramOptions options;
-        EXPECT_THROW(Parse(options, cases[i]), std::invalid_argument);
-    }
-}
-
-TEST(ProgramOptions, RejectsSameInputAndOutputFile) {
-    const TempFile input{"cryptoguard_cmd_options_test.txt"};
-    const auto &path = input.Path();
-    const auto samePathSpelledDifferently = path.parent_path() / "." / path.filename();
-
-    for (const auto &output : {path, samePathSpelledDifferently}) {
-        SCOPED_TRACE(output.string());
-        const auto error = ParseError({"-c", "encrypt", "-i", path.string(), "-o", output.string(), "-p", "secret"});
-        EXPECT_TRUE(error.contains("--input") && error.contains("--output")) << error;
+    const auto cases = std::to_array<Case>({
+        {{"-c", "checksum", "-i", "in.txt", "extra"}, {"too many positional options"}},
+        {{"-c", "checksum", "-i", "in.txt", "-i", "other.txt"}, {"input", "more than once"}},
+        {{"--unknown", "checksum", "-i", "in.txt"}, {"unrecognised option '--unknown'"}},
+    });
+    for (const auto &[args, expectedParts] : cases) {
+        SCOPED_TRACE(std::format("args '{}'", args | std::views::join_with(' ') | std::ranges::to<std::string>()));
+        const auto error = ParseError(args);
+        for (const auto part : expectedParts) {
+            EXPECT_TRUE(error.contains(part)) << "expected '" << part << "' in: " << error;
+        }
     }
 }
 

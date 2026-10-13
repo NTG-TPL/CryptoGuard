@@ -26,7 +26,7 @@ public:
 
 private:
     class Impl;
-    std::experimental::propagate_const<std::unique_ptr<Impl>> pImpl_;
+    std::experimental::propagate_const<std::unique_ptr<Impl>> impl_;
 };
 
 }  // namespace CryptoGuard

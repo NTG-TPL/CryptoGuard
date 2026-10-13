@@ -1,6 +1,7 @@
 #pragma once
 
-#include <boost/program_options.hpp>
+#include <boost/program_options/options_description.hpp>
+#include <filesystem>
 #include <iostream>
 #include <string>
 
@@ -25,14 +26,14 @@ public:
     PARSE_RESULT Parse(int argc, char *argv[], std::ostream &helpOut = std::cout);
 
     COMMAND_TYPE GetCommand() const noexcept { return command_; }
-    const std::string &GetInputFile() const noexcept { return inputFile_; }
-    const std::string &GetOutputFile() const noexcept { return outputFile_; }
+    const std::filesystem::path &GetInputFile() const noexcept { return inputFile_; }
+    const std::filesystem::path &GetOutputFile() const noexcept { return outputFile_; }
     const std::string &GetPassword() const noexcept { return password_; }
 
 private:
     COMMAND_TYPE command_ = COMMAND_TYPE::NONE;
-    std::string inputFile_;
-    std::string outputFile_;
+    std::filesystem::path inputFile_;
+    std::filesystem::path outputFile_;
     std::string password_;
 
     boost::program_options::options_description desc_;
