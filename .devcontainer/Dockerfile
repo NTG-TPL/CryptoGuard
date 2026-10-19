@@ -5,7 +5,7 @@ RUN apt clean
 RUN apt update
 
 # Install common tools
-RUN apt install -y python3-minimal python3-pip pipx git less vim sudo cmake make g++-15 clang-format clangd-20
+RUN apt install -y python3-minimal python3-pip pipx git less vim sudo cmake make g++-15 clang-format clangd-20 clang-tidy-20
 
 # Install additional tools and libraries
 RUN apt install -y libjemalloc-dev
@@ -57,6 +57,9 @@ RUN set -e; \
 USER $USERNAME
 
 RUN git config --global core.editor code
+
+# Create conan home so the mounted volume is owned by the user, not root
+RUN mkdir -p /home/$USERNAME/.conan2
 
 # Install conan through pipx
 RUN pipx install conan
